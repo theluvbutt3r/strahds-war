@@ -1,0 +1,80 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommitTypeAll(chore)"],
+
+  "//": [
+    "Every dependency in this repo is pinned to an exact version, deliberately. That is",
+    "the right call — it makes builds reproducible and a version change a reviewable",
+    "diff — but it only works with something to do the bumping. Unautomated exact pins",
+    "do not stay current; they rot quietly until an urgent security patch turns into a",
+    "day of untangling eighteen months of drift.",
+    "",
+    "Grouped into a handful of PRs rather than one per package, because this is a",
+    "solo project and thirty open PRs is the same as zero."
+  ],
+
+  "timezone": "Etc/UTC",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "pin",
+
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+
+  "packageRules": [
+    {
+      "description": "Security fixes go out immediately, ungrouped and unscheduled.",
+      "matchPackageNames": ["*"],
+      "vulnerabilityAlerts": {
+        "enabled": true
+      }
+    },
+    {
+      "description": "Patch and minor updates to dev tooling — low risk, one PR.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev tooling (non-major)"
+    },
+    {
+      "description": "The React/Next set moves together or not at all.",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom",
+        "next",
+        "@next/eslint-plugin-next",
+        "eslint-plugin-react-hooks"
+      ],
+      "groupName": "react + next"
+    },
+    {
+      "description": "Likewise the ESLint set — a plugin ahead of its core tends to break flat config.",
+      "matchPackageNames": ["eslint", "@eslint/js", "typescript-eslint", "eslint-plugin-*"],
+      "groupName": "eslint"
+    },
+    {
+      "description": "Hono and its middleware are versioned together upstream.",
+      "matchPackageNames": ["hono", "@hono/*"],
+      "groupName": "hono"
+    },
+    {
+      "description": "Drizzle ORM and kit must stay in step or migrations misbehave.",
+      "matchPackageNames": ["drizzle-orm", "drizzle-kit"],
+      "groupName": "drizzle"
+    },
+    {
+      "description": "Majors arrive one at a time and never grouped — each deserves its own read.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "TypeScript majors move the whole repo. Approve deliberately.",
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major", "minor"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

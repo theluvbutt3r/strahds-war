@@ -1,0 +1,53 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalDependencies": [".env", "tooling/tsconfig/*.json"],
+  "globalEnv": ["NODE_ENV", "CI", "PORT"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.test.tsx"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+
+      // Every variable that can change the build OUTPUT must be listed here, or Turbo
+      // serves a cache hit that bakes in the old value.
+      //
+      // NEXT_PUBLIC_* is the dangerous one and the reason this key exists. Next inlines
+      // those into the client bundle at build time, so changing NEXT_PUBLIC_API_URL
+      // changes the shipped JavaScript — but nothing in app source reads process.env, so
+      // the turbo/no-undeclared-env-vars lint rule cannot see the dependency and will not
+      // warn. Undeclared, the sequence is: change the URL, rebuild, get a cache hit, ship
+      // a bundle still pointing at the old API. Silent, and visible only in production.
+      //
+      // RULE: a variable added to .env.example gets added here in the same commit.
+      "env": [
+        "NEXT_PUBLIC_*",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "R2_PUBLIC_URL",
+        "SENTRY_DSN"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

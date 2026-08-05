@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  # Keeps Turborepo's cache keys stable across runners.
+  TURBO_TELEMETRY_DISABLED: 1
+  DO_NOT_TRACK: 1
+
+jobs:
+  # Everything that needs no browser and no database. Kept as one job on purpose:
+  # PLAN.md §9 asks for CI under 90 seconds, and three parallel jobs would each pay
+  # the ~25s setup cost to save less than that in wall clock.
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Shallow. The previous `fetch-depth: 0` was justified by a comment about
+      # `turbo --filter=...[origin/main]`, but no step here uses a filter — every job
+      # runs the whole workspace. Restore full history alongside the filter, not before.
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # The check that keeps PLAN.md §3 honest: writes deliberately illegal imports and
+      # requires pnpm, ESLint and dependency-cruiser to each reject them independently.
+      - name: Boundaries are enforced
+        run: pnpm verify:boundaries
+
+      - name: Dependency graph
+        run: pnpm lint:deps
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # Both projects run chromium-family engines, so one browser download covers
+      # desktop and the Pixel 7 emulation.
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @sw/web exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @sw/web exec playwright install-deps chromium
+
+      - run: pnpm --filter @sw/web build
+
+      # Runs BOTH projects — desktop and mobile.
+      #
+      # This step used to pass `--project=desktop`, which meant the mobile project existed
+      # in the config, ran on every developer's machine, and never once ran in CI. CI was
+      # weaker than local, which is backwards, and it made mobile "first-class" only in a
+      # comment. Players read this at the table on a phone; Phase 6's spoiler-leak suite
+      # has to prove clearance holds on the layout they actually use.
+      #
+      # `test:e2e:only` rather than `test:e2e` — the build already happened above.
+      - name: Playwright
+        run: pnpm --filter @sw/web test:e2e:only
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - services/*
+  - packages/*
+  - tooling/*
+
+# pnpm >=10 refuses to run install scripts unless a package is listed here.
+# Keep this list short and deliberate — each entry is arbitrary code running at install
+# time, so a new one appearing in a diff is worth a second look.
+allowBuilds:
+  esbuild: true # native binary for the bundler
+  unrs-resolver: true # native resolver used by eslint-plugin-import-x
+  sharp: false # not installed yet; Next.js image optimisation will want it in Phase 3
+
+# pnpm 11 holds back very recent releases by default. tsx 4.23.8 is needed now for the
+# API's dev server; revisit this list rather than letting it accumulate silently.
+minimumReleaseAgeExclude:
+  - tsx@4.23.8

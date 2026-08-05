@@ -1,0 +1,21 @@
+# Fast checks only — anything slower than a couple of seconds belongs in CI, or
+# people start reaching for --no-verify and the hook stops existing in practice.
+#
+# That principle also explains a flag in package.json's lint-staged config:
+# `eslint --max-warnings=0 --no-warn-ignored`. lint-staged invokes ESLint with explicit
+# file paths, and ESLint emits a *warning* for each path it has been configured to ignore
+# — apps/web/next-env.d.ts hits the `**/*.d.ts` ignore in base.js. With --max-warnings=0
+# that warning is fatal, so without --no-warn-ignored every commit touching a .d.ts file
+# fails this hook for no real reason. A hook that blocks good commits gets bypassed with
+# --no-verify, which also skips the secret scan below. Keep the flag.
+
+pnpm exec lint-staged
+
+# Secrets backstop. gitleaks is optional locally (CI always runs it), because a hook
+# that hard-fails on a missing binary is a hook that gets bypassed.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner --config .gitleaks.toml
+else
+  echo "note: gitleaks not installed — skipping local secret scan (CI still runs it)"
+  echo "      brew install gitleaks"
+fi

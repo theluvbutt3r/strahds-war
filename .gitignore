@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Turborepo
+.turbo/
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# Secrets — never commit real values. See .env.example for the contract.
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Generated
+docs/dependency-graph.svg
+
+# Temporary fixtures written by scripts/verify-boundaries.ts. They are deliberately
+# illegal code and are deleted on the way out; this is a backstop for an interrupted run.
+**/__boundary_check__.ts
+**/__boundary_check_relative__.ts
+**/__boundary_check_ok__.ts
+**/__role_check__*
+**/__role_check_ok__.ts
+**/__use_client_check__.tsx

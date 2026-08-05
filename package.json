@@ -1,0 +1,49 @@
+{
+  "name": "strahds-war",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Strahd's War — a gothic-horror campaign wiki with server-enforced spoiler boundaries",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22.11.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "lint:deps": "depcruise apps services packages tooling",
+    "lint:deps:graph": "depcruise apps services packages --output-type dot | dot -T svg > docs/dependency-graph.svg",
+    "verify:boundaries": "tsx scripts/verify-boundaries.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "turbo run clean",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@sw/eslint-config": "workspace:*",
+    "@sw/tsconfig": "workspace:*",
+    "dependency-cruiser": "18.1.1",
+    "eslint": "10.8.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.3.0",
+    "prettier": "3.9.6",
+    "tsx": "4.23.8",
+    "turbo": "2.10.8",
+    "typescript": "5.9.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "eslint --max-warnings=0 --no-warn-ignored --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
+  }
+}

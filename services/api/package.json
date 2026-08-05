@@ -1,0 +1,35 @@
+{
+  "name": "@sw/api",
+  "version": "0.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Hono HTTP API — the only process that touches the database",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsx build.ts",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.0",
+    "@hono/zod-openapi": "1.5.1",
+    "@sw/authz": "workspace:*",
+    "@sw/db": "workspace:*",
+    "@sw/schemas": "workspace:*",
+    "hono": "4.13.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@sw/tsconfig": "workspace:*",
+    "@sw/vitest-config": "workspace:*",
+    "@types/node": "22.20.1",
+    "esbuild": "0.28.1",
+    "tsx": "4.23.8",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

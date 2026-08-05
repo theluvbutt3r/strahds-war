@@ -1,0 +1,10 @@
+{
+  "$comment": "Root config exists for editor tooling and dependency-cruiser. Each workspace has its own — this one compiles nothing.",
+  "extends": "@sw/tsconfig/base",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["scripts/**/*.ts", "eslint.config.js"],
+  "exclude": ["node_modules", "**/dist", "**/.next"]
+}

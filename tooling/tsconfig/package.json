@@ -1,0 +1,12 @@
+{
+  "name": "@sw/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "files": [
+    "base.json",
+    "library.json",
+    "react-library.json",
+    "nextjs.json"
+  ]
+}

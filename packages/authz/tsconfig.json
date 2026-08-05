@@ -1,0 +1,5 @@
+{
+  "extends": "@sw/tsconfig/library",
+  "include": ["src/**/*", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

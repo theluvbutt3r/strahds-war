@@ -1,0 +1,19 @@
+# Secret scanning. See docs/PLAN.md §10: nothing real lives in the repo — .env.example
+# documents the contract, real values live in the platform secret store.
+title = "Strahd's War"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders, not credentials"
+paths = [
+  '''\.env\.example$''',
+  '''pnpm-lock\.yaml$''',
+  '''docs/adr/.*\.md$''',
+]
+regexes = [
+  '''postgresql://user:password@host''',
+  '''REPLACE_ME''',
+  '''your-.*-here''',
+]

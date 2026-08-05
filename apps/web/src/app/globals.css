@@ -1,0 +1,37 @@
+/*
+ * Phase 2 replaces this with Tailwind v4 and the @theme block fed by @sw/design-tokens.
+ * These few values exist so Phase 0 has something recognisably Barovian on screen while
+ * the toolchain is being verified — they are not the design system.
+ */
+
+:root {
+  --void: #0b0a0c;
+  --crypt: #141317;
+  --mist: #6e6a75;
+  --bone: #e8e3d9;
+  --ember: #b33636;
+  --gold: #b08d4f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--void);
+  color: var(--bone);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--ember);
+}
