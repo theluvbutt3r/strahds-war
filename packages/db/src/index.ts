@@ -12,7 +12,12 @@
  *   3. dependency-cruiser's `db-only-from-api` rule
  * scripts/verify-boundaries.ts asserts all three still bite.
  *
- * Phase 1 fills this in (docs/PLAN.md §9).
+ * The chokepoint itself is `queries.ts`: reads select only the columns the requester's
+ * clearance permits, so DM-tier material is never fetched rather than being fetched and
+ * then withheld.
  */
 
-export const DB_PHASE = 1 as const;
+export * as schema from "./schema";
+export * from "./schema";
+export * from "./client";
+export * from "./queries";

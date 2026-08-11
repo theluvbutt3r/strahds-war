@@ -18,7 +18,8 @@
     "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
   },
   "dependencies": {
-    "@sw/schemas": "workspace:*"
+    "@sw/schemas": "workspace:*",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@sw/tsconfig": "workspace:*",

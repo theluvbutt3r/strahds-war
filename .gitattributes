@@ -1,0 +1,30 @@
+# Normalise line endings to LF in the repository and in the working tree.
+#
+# Prettier is configured with `endOfLine: "lf"` (.prettierrc.json), so a checkout that
+# converts to CRLF makes `pnpm format:check` — and therefore `pnpm verify` and CI — fail on
+# every file in the repo at once, with no real formatting drift behind it. Git for Windows
+# sets `core.autocrlf=true` by default, so that is the out-of-the-box experience for any
+# Windows contributor rather than an unlucky edge case.
+#
+# `eol=lf` rather than plain `text=auto`: the latter still checks out CRLF on Windows.
+* text=auto eol=lf
+
+# Files that must keep CRLF to run at all.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary — never touch these, and never diff them as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Generated. Keep it out of diffs so a lockfile change does not bury a review.
+pnpm-lock.yaml -diff linguist-generated

@@ -13,7 +13,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
   },
@@ -24,6 +24,7 @@
     "@sw/tsconfig": "workspace:*",
     "@sw/vitest-config": "workspace:*",
     "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.10",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   }

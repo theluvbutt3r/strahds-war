@@ -1,15 +1,34 @@
 import { serve } from "@hono/node-server";
+import { createDb } from "@sw/db";
 
 import { createApp } from "./app";
+import { createAuth } from "./auth";
+import { loadConfig } from "./env";
 
 /**
  * Process entry point. All routing lives in app.ts so tests can drive it without binding
  * a port; this file owns only the things that are true of a running process.
+ *
+ * The order here is the point: configuration is validated, then the database connects,
+ * then auth is constructed from both, then the app is assembled from the result. Every
+ * dependency is passed in rather than reached for, which is what lets app.ts be tested
+ * without any of them.
  */
 
-const port = Number(process.env.PORT ?? 3001);
+const config = loadConfig();
+const { db } = createDb({ connectionString: config.databaseUrl });
+const auth = createAuth(db, config);
 
-const server = serve({ fetch: createApp().fetch, port }, (info) => {
+const app = createApp({
+  authHandler: (request) => auth.handler(request),
+  getSession: async (headers) => auth.api.getSession({ headers }),
+  webOrigin: config.webOrigin,
+  exposeOpenApiDoc: config.nodeEnv !== "production",
+});
+
+const port = config.port;
+
+const server = serve({ fetch: app.fetch, port }, (info) => {
   console.info(`sw-api listening on http://127.0.0.1:${info.port}`);
 });
 

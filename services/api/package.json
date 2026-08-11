@@ -20,6 +20,7 @@
     "@sw/authz": "workspace:*",
     "@sw/db": "workspace:*",
     "@sw/schemas": "workspace:*",
+    "better-auth": "1.6.26",
     "hono": "4.13.0",
     "zod": "4.4.3"
   },

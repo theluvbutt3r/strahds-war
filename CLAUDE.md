@@ -37,6 +37,17 @@ Content carries a clearance tier: `public` < `player` < `dm`. New content defaul
 | `pnpm verify:boundaries`         | Prove the security guardrails still fire                     |
 | `pnpm --filter @sw/web test:e2e` | Browser tests (builds first)                                 |
 
+Database work, all of which needs `DATABASE_URL` set:
+
+| Command                            | Use                                                       |
+| ---------------------------------- | --------------------------------------------------------- |
+| `pnpm --filter @sw/db db:generate` | Write a migration after editing the Drizzle schema        |
+| `pnpm --filter @sw/db db:migrate`  | Apply pending migrations                                  |
+| `pnpm --filter @sw/db db:seed`     | Load the Barovia development content (idempotent by slug) |
+| `pnpm --filter @sw/db db:studio`   | Browse the database                                       |
+
+Migrations are **generated and committed**, never pushed. `drizzle-kit push` is deliberately not wired up: it diffs the schema straight onto a live database with no reviewable artefact, which is fine for a scratch branch and wrong for anything holding campaign content.
+
 Scope to one workspace with `pnpm --filter @sw/<name> <script>`.
 
 **Never report work as complete without running `pnpm verify` and seeing it pass.** Do not substitute a narrower command; the boundary harness is the part most likely to catch a real mistake.
@@ -138,17 +149,26 @@ Real secrets never enter the repo. `.env` is gitignored; gitleaks runs in CI.
 | Why a separate API, not tRPC?        | `docs/adr/0003-standalone-http-api.md`            |
 | Why can't I compare roles?           | `docs/adr/0004-capability-based-authorization.md` |
 | Why can't the web app use the DB?    | `docs/adr/0005-db-only-from-api.md`               |
+| How is a half-secret NPC modelled?   | `docs/adr/0006-field-level-visibility.md`         |
 | What was already found and fixed?    | `docs/AUDIT-REMEDIATION.md`                       |
 
 Making a decision that will outlive the conversation? Write an ADR. Format in `docs/adr/README.md`.
 
 ## Current state
 
-**Phase 0 complete.** Foundation only — no wiki yet. `apps/web` renders one placeholder page; `services/api` serves `/health` and the OpenAPI document; most packages export a phase constant and nothing else.
+**Phase 1 complete.** Data and auth exist; the wiki does not yet.
 
-**Phase 1 is next:** Drizzle schema, Better Auth (Google + Discord), the real permission matrix, and API auth middleware. See `docs/PLAN.md` §9.
+- `packages/schemas` — all nine entity kinds, the graph edges, revisions, the audit log, and the per-field clearance maps (ADR 0006).
+- `packages/authz` — the real matrix, 5 roles × 12 actions, at 100% coverage with thresholds enforced by its own vitest config.
+- `packages/db` — 17 tables, the committed migration in `migrations/`, clearance-aware query builders, and the Barovia seed.
+- `services/api` — Better Auth (Google + Discord, `admin` plugin) at `/api/auth/*`, plus `/me` returning role, clearance and capabilities.
+- `apps/web` — a sign-in page and a home page that shows the signed-in role. No content yet.
 
-`can()` currently returns `false` for everything, with a test locking that in. That is the correct stub for a security primitive — wiring an enforcement site to it early yields a locked door, not an open one. Implementing the matrix means replacing both the function and that test.
+**Phase 2 is next:** the design system — `design-tokens`, Tailwind v4 `@theme`, shadcn/ui vendored into `packages/ui`, Storybook, and the CI contrast test. See `docs/PLAN.md` §9.
+
+**What is not done, deliberately.** `@sw/api-client` is hand-written rather than generated from the OpenAPI document; generation waits for Phase 3, when there are content endpoints worth generating against. Per-_block_ visibility inside prose waits for the editor in Phase 4 — until then DM prose belongs in each kind's `secrets` field, which is separately gated. There are no entity endpoints yet; the query builders exist and are unit-tested, but nothing routes to them until Phase 3.
+
+**Untested against live infrastructure.** The auth flow has never run against a real Neon database or real OAuth credentials — there are none in this environment. Everything around it is tested (the matrix, the guild-membership decision, session-to-actor mapping, `/me`), and the API boots and serves `/me` correctly, but the first real sign-in is still a first.
 
 ## Gotchas
 

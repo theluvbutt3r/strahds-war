@@ -1,6 +1,10 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { VISIBILITY_TIERS } from "@sw/schemas";
+import { ACTIONS, can } from "@sw/authz";
+import { clearanceFor, ROLES, VISIBILITY_TIERS } from "@sw/schemas";
+import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
+
+import { actorFromSession, type SessionLike } from "./actor";
 
 /**
  * The API is built as an OpenAPIHono app rather than a plain Hono one so that the spec
@@ -33,6 +37,50 @@ const healthRoute = createRoute({
   },
 });
 
+/**
+ * "Who am I", as the web app needs it.
+ *
+ * Returns capabilities alongside the role, and that is a deliberate convenience with a
+ * warning attached: the list exists so the UI can decide whether to *render* an Edit
+ * button without reimplementing the matrix in the browser. It is not a grant. The server
+ * re-checks `can()` at every enforcement site, because a client that posts an action it
+ * was not offered must still be refused.
+ */
+const meResponse = z
+  .object({
+    authenticated: z.boolean(),
+    user: z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        email: z.email(),
+        image: z.url().nullable(),
+      })
+      .nullable(),
+    role: z.enum(ROLES),
+    clearance: z.enum(VISIBILITY_TIERS),
+    /** True while an Overlord is viewing the wiki as this user. */
+    impersonating: z.boolean(),
+    /** Capabilities over ordinary published campaign content, for UI affordances only. */
+    capabilities: z.array(z.enum(ACTIONS)),
+  })
+  .openapi("Me");
+
+const meRoute = createRoute({
+  method: "get",
+  path: "/me",
+  summary: "The signed-in user's identity, role and clearance",
+  responses: {
+    200: {
+      content: { "application/json": { schema: meResponse } },
+      description: "The caller's identity. Anonymous callers get role `viewer`.",
+    },
+  },
+});
+
+/** Resolves the caller's session. Returns null when there is none. */
+export type SessionResolver = (headers: Headers) => Promise<SessionLike | null>;
+
 export interface AppOptions {
   /**
    * Whether to serve the generated OpenAPI document at /openapi.json.
@@ -45,12 +93,53 @@ export interface AppOptions {
    * map. Development serves it; that is where @sw/api-client is generated from.
    */
   readonly exposeOpenApiDoc?: boolean;
+
+  /**
+   * Handler for Better Auth's routes, mounted at /api/auth/*.
+   *
+   * Injected rather than constructed here so the app can be built — and tested — without
+   * a database. Absent means the auth routes are simply not mounted, which is what the
+   * route tests want.
+   */
+  readonly authHandler?: (request: Request) => Promise<Response>;
+
+  /** Resolves a session from request headers. Absent means every caller is anonymous. */
+  readonly getSession?: SessionResolver;
+
+  /** Web origin allowed to send credentialed cross-origin requests. */
+  readonly webOrigin?: string;
 }
 
 export function createApp(options: AppOptions = {}) {
   const exposeOpenApiDoc = options.exposeOpenApiDoc ?? process.env.NODE_ENV !== "production";
 
   const app = new OpenAPIHono();
+
+  /**
+   * CORS, scoped to the one origin that is allowed to carry credentials.
+   *
+   * `credentials: true` is required for the session cookie to travel from the web app to
+   * this service at all, and it is precisely why `origin` must be a single named origin
+   * rather than a wildcard — browsers refuse the combination, and a permissive value here
+   * would let any site make authenticated requests on a signed-in player's behalf.
+   */
+  if (options.webOrigin) {
+    app.use(
+      "*",
+      cors({
+        origin: options.webOrigin,
+        credentials: true,
+        allowHeaders: ["Content-Type", "Authorization"],
+        allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      }),
+    );
+  }
+
+  if (options.authHandler) {
+    // Better Auth owns everything under this prefix: the OAuth start and callback URLs,
+    // session endpoints, and the admin plugin's role, ban and impersonation routes.
+    app.all("/api/auth/*", (c) => options.authHandler!(c.req.raw));
+  }
 
   app.openapi(healthRoute, (c) =>
     c.json(
@@ -62,6 +151,35 @@ export function createApp(options: AppOptions = {}) {
       200,
     ),
   );
+
+  app.openapi(meRoute, async (c) => {
+    const session = options.getSession ? await options.getSession(c.req.raw.headers) : null;
+    const actor = actorFromSession(session);
+
+    // A representative published, player-tier subject. This answers "what can you do with
+    // ordinary campaign content", which is what the UI needs to decide about buttons —
+    // not a claim about any specific entity, which the server checks when asked.
+    const subject = { kind: "npc", visibility: "player", published: true } as const;
+
+    return c.json(
+      {
+        authenticated: session !== null,
+        user: session
+          ? {
+              id: session.user.id,
+              name: (session.user as { name?: string }).name ?? "",
+              email: (session.user as { email?: string }).email ?? "",
+              image: (session.user as { image?: string | null }).image ?? null,
+            }
+          : null,
+        role: actor.role,
+        clearance: clearanceFor(actor.role),
+        impersonating: actor.impersonating !== undefined,
+        capabilities: ACTIONS.filter((action) => can(actor, action, subject)),
+      },
+      200,
+    );
+  });
 
   if (exposeOpenApiDoc) {
     // `doc31`, NOT `doc`. Both exist; only this one emits OpenAPI 3.1 schemas.

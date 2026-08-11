@@ -125,7 +125,11 @@ export const base = tseslint.config(
     // `console.warn`, which is what the original server.ts did. Mislabelled levels are
     // worse than no rule — they train you to ignore warnings. Phase 6 replaces this with
     // pino (PLAN.md §10); until then, let the level be honest.
-    files: ["services/*/src/server.ts"],
+    // `*-cli.ts` is included on the same reasoning: a seed script that reports what it
+    // wrote is a process entry point announcing a lifecycle event, not a library logging
+    // from the request path. The alternative was `console.warn("Seeded 18 entities")`,
+    // which is precisely the mislabelling this exemption exists to avoid.
+    files: ["services/*/src/server.ts", "packages/*/src/*-cli.ts"],
     rules: {
       "no-console": ["warn", { allow: ["info", "warn", "error"] }],
     },

@@ -2,7 +2,10 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalDependencies": [".env", "tooling/tsconfig/*.json"],
-  "globalEnv": ["NODE_ENV", "CI", "PORT"],
+  // SEED_ALLOW_NONLOCAL is read by the seed script's safety check rather than by any
+  // build, so it belongs here rather than in build.env — but it still has to be declared,
+  // or turbo/no-undeclared-env-vars flags it.
+  "globalEnv": ["NODE_ENV", "CI", "PORT", "SEED_ALLOW_NONLOCAL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -25,6 +28,7 @@
         "DATABASE_URL",
         "BETTER_AUTH_URL",
         "BETTER_AUTH_SECRET",
+        "WEB_ORIGIN",
         "R2_PUBLIC_URL",
         "SENTRY_DSN"
       ]

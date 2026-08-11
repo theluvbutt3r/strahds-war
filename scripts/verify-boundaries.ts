@@ -33,11 +33,54 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * Absolute path to a locally installed CLI's JavaScript entry point.
+ *
+ * WHY NOT JUST RUN `pnpm exec eslint`. This harness used to shell out to `pnpm`, and on
+ * Windows that cannot work: `pnpm` there is `pnpm.CMD`, a batch shim, and `execFileSync`
+ * spawns executables directly rather than through a shell. The call throws ENOENT before
+ * any checking happens — and because the catch in `run()` reports a throw as "non-zero
+ * exit, empty output", every single check read as *rejected for the wrong reason* while
+ * the positive controls read as failures. A harness whose whole purpose is to distinguish
+ * "the rule fired" from "something else went wrong" was reporting the second as the
+ * first, for every check, on the maintainer's own platform.
+ *
+ * Appending `.CMD` does not fix it either: since the fix for CVE-2024-27980, Node refuses
+ * to spawn `.cmd`/`.bat` without `shell: true`, and adding a shell reintroduces argument
+ * quoting as a problem — this repo's own path contains an apostrophe.
+ *
+ * So resolve the tool's entry point and run it under the Node binary already executing
+ * this script. No shell, no shims, no quoting, identical on Windows, macOS and Linux.
+ *
+ * The path comes from the tool's own `bin` field rather than being hardcoded, so a
+ * version bump that relocates the file surfaces here as a clear error instead of a
+ * mysterious one. package.json is read as a *file* on purpose: dependency-cruiser's
+ * `exports` map does not expose `./package.json`, so `require.resolve` cannot reach it.
+ */
+function toolEntry(pkg: string, binName: string): string {
+  const manifestPath = join(ROOT, "node_modules", pkg, "package.json");
+  if (!existsSync(manifestPath)) {
+    throw new Error(`${pkg} is not installed — run \`pnpm install\` before verifying boundaries.`);
+  }
+
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    bin?: string | Record<string, string>;
+  };
+  const entry = typeof manifest.bin === "string" ? manifest.bin : manifest.bin?.[binName];
+  if (!entry) {
+    throw new Error(
+      `${pkg} declares no "${binName}" bin — its layout changed; update toolEntry().`,
+    );
+  }
+
+  return join(ROOT, "node_modules", pkg, entry);
+}
 
 interface Fixture {
   readonly label: string;
@@ -209,10 +252,18 @@ function remove(fixture: Fixture): void {
   rmSync(join(ROOT, fixture.path), { force: true });
 }
 
-/** Runs a command and returns its combined output plus exit status. */
-function run(cmd: string, args: string[]): { code: number; output: string } {
+/**
+ * Runs a locally installed CLI under Node and returns its combined output plus status.
+ *
+ * A failure to *launch* is deliberately not folded into "the tool exited non-zero". The
+ * two mean opposite things here — a non-zero exit is a rule firing, which is what most
+ * checks below are asserting, whereas a launch failure means nothing was checked at all.
+ * Reporting the second as the first is precisely how this harness passed as "everything
+ * rejected" while doing no work; it throws now, loudly, rather than being scored.
+ */
+function run(entry: string, args: string[]): { code: number; output: string } {
   try {
-    const output = execFileSync(cmd, args, {
+    const output = execFileSync(process.execPath, [entry, ...args], {
       cwd: ROOT,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
@@ -220,13 +271,30 @@ function run(cmd: string, args: string[]): { code: number; output: string } {
     });
     return { code: 0, output };
   } catch (error) {
-    const err = error as { status?: number; stdout?: string; stderr?: string };
-    return { code: err.status ?? 1, output: `${err.stdout ?? ""}${err.stderr ?? ""}` };
+    const err = error as { status?: number; code?: string; stdout?: string; stderr?: string };
+
+    // `status` is null when the process never ran (ENOENT) or died on a signal. Either
+    // way no checking happened, so this is a harness fault, not a finding.
+    if (typeof err.status !== "number") {
+      throw new Error(
+        `failed to run ${entry}: ${err.code ?? "unknown error"}. The boundary harness could not execute, so nothing was verified.`,
+        { cause: error },
+      );
+    }
+
+    return { code: err.status, output: `${err.stdout ?? ""}${err.stderr ?? ""}` };
   }
 }
 
+const ESLINT = toolEntry("eslint", "eslint");
+const DEPCRUISE = toolEntry("dependency-cruiser", "depcruise");
+
 function lint(paths: string[]): { code: number; output: string } {
-  return run("pnpm", ["exec", "eslint", "--no-warn-ignored", "--format", "stylish", ...paths]);
+  return run(ESLINT, ["--no-warn-ignored", "--format", "stylish", ...paths]);
+}
+
+function depcruise(dirs: string[]): { code: number; output: string } {
+  return run(DEPCRUISE, [...dirs, "--output-type", "err"]);
 }
 
 // ---------------------------------------------------------------------------
@@ -291,15 +359,7 @@ console.log("\nMechanism 3 — dependency-cruiser");
   const fixture = VIOLATIONS[4]!;
   write(fixture);
   try {
-    const { code, output } = run("pnpm", [
-      "exec",
-      "depcruise",
-      "apps",
-      "services",
-      "packages",
-      "--output-type",
-      "err",
-    ]);
+    const { code, output } = depcruise(["apps", "services", "packages"]);
     report(
       code !== 0 && output.includes("db-only-from-api"),
       "db-only-from-api rejects a relative-path reach into packages/db",
@@ -315,16 +375,7 @@ console.log("\nMechanism 3 — dependency-cruiser");
 }
 
 {
-  const { code, output } = run("pnpm", [
-    "exec",
-    "depcruise",
-    "apps",
-    "services",
-    "packages",
-    "tooling",
-    "--output-type",
-    "err",
-  ]);
+  const { code, output } = depcruise(["apps", "services", "packages", "tooling"]);
   report(code === 0, "the repo as it stands has no forbidden edges or cycles", output.trim());
 }
 
