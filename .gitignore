@@ -25,6 +25,7 @@ blob-report/
 !.env.example
 
 # Editor / OS
+.claude/settings.local.json
 .DS_Store
 .idea/
 .vscode/*
