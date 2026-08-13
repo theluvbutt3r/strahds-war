@@ -131,6 +131,60 @@ Write assertions that can fail. This repo previously shipped `expect(VISIBILITY_
 
 **Formatting** is Prettier's problem. Run `pnpm format`; never hand-format.
 
+## Version control
+
+**Never commit to `main` directly.** Branch, open a pull request, merge when CI is green. The workflow already assumes this — `.github/workflows/ci.yml` triggers on `pull_request`, so anything committed straight to `main` skips the review step the config exists for.
+
+Branch names describe the work in kebab-case: `phase-2-design-system`, `fix-discord-guild-timeout`, `docs-adr-0007`. Phase branches are named for their phase, as `phase-1-data-and-auth` was.
+
+### Commit messages
+
+**Subject:** [Conventional Commits](https://www.conventionalcommits.org) — `type(scope): summary`. Imperative mood ("add", not "added"), no trailing period, 72 characters or fewer.
+
+Types: `feat` `fix` `docs` `test` `refactor` `perf` `build` `ci` `chore`. Scope is the workspace when one applies — `feat(db):`, `fix(api):`, `docs(adr):`.
+
+Phase commits are the deliberate exception. `Phase 1: data model, permission matrix, and authentication` reads better than `feat: phase 1`, and there are only seven of them in the whole plan. Anything smaller than a phase takes the conventional form.
+
+**Body:** explain _why_, wrapped at 72 columns. The diff already says what changed; it cannot say what you rejected or what you are unsure of.
+
+`git show ca6a995` is the reference example in this repo. It groups changes by package, gives the reasoning behind each decision, and — the part worth copying — ends with what was deliberately left undone and what has never been exercised against live infrastructure. A commit that admits its own gaps is the difference between a future reader trusting the code and having to re-audit it.
+
+### What belongs in one commit
+
+One logical change, and **each commit should leave `pnpm verify` passing.** History you can't bisect is history you can only read. Formatting-only churn goes in its own commit, never mixed with logic — a real one-line fix buried in 400 lines of reflow is invisible in review.
+
+### Merging
+
+**Squash-merge**, so `main` carries one entry per PR and stays linear. Write the real explanation in the squash message; the intermediate "wip" and "fix typo" commits on the branch are scaffolding and don't need to outlive it.
+
+### Published history is append-only
+
+Never force-push `main`, or any branch someone else may have pulled. Rebasing a branch that exists only on your machine is fine and often tidier.
+
+To undo something already pushed, use `git revert` — it records the reversal as a new commit. `git reset --hard` on published history rewrites what other people already have, and there is no way for them to find out except by their next pull failing.
+
+### Hooks and secrets
+
+`.husky/pre-commit` runs lint-staged and, when installed, gitleaks. `--no-verify` is banned (see [Guardrails](#the-prohibition)) and the reason is specific: it skips the secret scan, not just the linter. Real secrets never enter the repo — `.env` is gitignored, and gitleaks runs in CI regardless of what happened locally.
+
+### Line endings
+
+`.gitattributes` normalises everything to LF, because Git for Windows defaults to `core.autocrlf=true` and Prettier is configured `endOfLine: "lf"`.
+
+**If `pnpm format:check` fails on dozens of files you never touched, that is line endings, not formatting.** Do not fix it with `pnpm format` — that rewrites the whole repo and buries your actual change. The file rules only apply at checkout, so re-checkout the tree instead, on a clean working tree:
+
+```sh
+git rm --cached -r -q . && git reset --hard
+```
+
+### When Claude commits
+
+Don't. Not unless asked — staging and committing on someone's behalf takes away the last cheap chance to review. Sign work that is asked for with the standard trailer:
+
+```
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+```
+
 ## Environment variables
 
 Adding one? It goes in **`.env.example`** and, if it can change build output, in **`turbo.json`'s `build.env`** — same commit.
