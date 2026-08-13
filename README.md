@@ -2,7 +2,7 @@
 
 A campaign wiki for a homebrew _Curse of Strahd_ game. Players look things up on their phones at the table; the DM writes and hides secrets; nobody accidentally reads the twist ending.
 
-**Status: Phase 0 of 7.** The foundation is built and green. The wiki itself is not built yet — that's what you're here to do.
+**Status: Phase 2 of 7 complete.** The foundation, the data model, login, and the design system are built and green. The wiki itself is not built yet — that's what you're here to do.
 
 > **New here? Read [§1](#1-what-you-actually-need-to-know) and [§2](#2-get-it-running-10-minutes), run `pnpm dev`, then come back for the rest.** You do not need to understand the whole repo to start.
 
@@ -189,6 +189,17 @@ Run all of these from the repo root.
 | `pnpm verify:boundaries`         | Prove the security guardrails still work (the good stuff)    |
 | `pnpm --filter @sw/web test:e2e` | Browser tests. Builds first, then drives a real Chrome       |
 
+For the design system:
+
+| Command                          | What it does                                                 |
+| -------------------------------- | ------------------------------------------------------------ |
+| `pnpm --filter @sw/ui storybook` | Every component, on its own, at <http://localhost:6006>      |
+| `pnpm theme`                     | Rebuild the CSS after you change a colour — **see the note** |
+
+**The one gotcha worth knowing up front.** The colours, fonts and spacing live in TypeScript, in `packages/design-tokens/src`. Tailwind needs them as CSS, so `pnpm theme` writes `packages/design-tokens/theme.css` from them — a generated file you commit, like a database migration.
+
+Change a colour and forget to run it, and the site keeps rendering the old one while every test still passes. So `pnpm verify` runs `pnpm theme:check` and fails if the file is stale. If you see _"theme.css is out of date"_, that is what happened: run `pnpm theme`, commit the result.
+
 Working in one package only? `pnpm --filter @sw/authz test` runs just that package's tests. The names are in each `package.json` — `@sw/web`, `@sw/api`, `@sw/schemas`, and so on.
 
 ---
@@ -346,26 +357,26 @@ The full plan with time estimates is [`docs/PLAN.md`](docs/PLAN.md) §9. Where t
 | Phase                   | What                                                         | Status              |
 | ----------------------- | ------------------------------------------------------------ | ------------------- |
 | **0 — Foundation**      | Monorepo, TypeScript, lint, tests, CI, boundary enforcement  | ✅ **Done**         |
-| **1 — Data & auth**     | Database tables, Google/Discord login, the permission matrix | 👈 **You are here** |
-| 2 — Design system       | The Barovian palette and component set                       | Not started         |
-| 3 — Read-only wiki      | Entity pages, search, the actual browsable site              | Not started         |
+| **1 — Data & auth**     | Database tables, Google/Discord login, the permission matrix | ✅ **Done**         |
+| **2 — Design system**   | The Barovian palette and component set                       | ✅ **Done**         |
+| **3 — Read-only wiki**  | Entity pages, search, the actual browsable site              | 👈 **You are here** |
 | 4 — Admin & editor      | Rich-text editing, publishing, media. The big one            | Not started         |
 | 5 — PWA & offline       | Installs on a phone, works without signal                    | Not started         |
 | 6 — Polish & production | Monitoring, backups, the spoiler-leak test suite             | Not started         |
 
-### Your first task
+### Your next task
 
-Phase 1 starts with the permission matrix, because it's pure logic with no database and no UI — the best possible place to learn the codebase.
+Phase 3 turns the pieces into a site. The database tables, the permission matrix and the components all exist; what does not exist is a single endpoint that serves an NPC, or a page that shows one.
 
-Right now `packages/authz/src/can.ts` returns `false` for everything. That's deliberate: a half-built security function should deny, not allow. Your job is to make it real.
+Start at the API, not the page. The whole secret-keeping design rests on the filtering happening in the query, so the endpoint is where the interesting decisions are — the page is then just markup over whatever it returns.
 
 Try this prompt:
 
-> Read `docs/adr/0004-capability-based-authorization.md` and `packages/authz/src/types.ts`. Implement the permission matrix in `can.ts` as a data table covering all 5 roles × all 12 actions, using the role capabilities in `docs/PLAN.md` §5. Write a table-driven test asserting every combination. Then run `pnpm verify`.
+> Read `docs/adr/0006-field-level-visibility.md` and `packages/db/src/queries.ts`. Add a `GET /npc/:slug` endpoint to `services/api` that uses the clearance-aware query builder, and write an integration test that signs in as a player and asserts the DM-only fields are absent from the response **body** — not merely hidden. Then run `pnpm verify`.
 
-It's self-contained, fully testable, needs no database, and when it's done you'll understand the security model by having built it.
+That last part is the habit worth building: assert on what was sent, not on what was displayed. A test that checks the UI hid something passes just as happily when the data was in the payload all along.
 
-**Before you start:** answer the open questions in `docs/PLAN.md` §11 with your friend — especially #2 (who gets accounts) and #3 (is anything public). Those shape Phase 1.
+**Still open:** the questions in `docs/PLAN.md` §11 — especially #4 (what format your existing prep notes are in), which shapes the Phase 4 importer.
 
 ---
 

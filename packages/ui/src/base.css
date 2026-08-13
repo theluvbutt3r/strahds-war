@@ -1,0 +1,226 @@
+/*
+ * Element-level defaults for anything rendering @sw/ui.
+ *
+ * Separate from `@sw/design-tokens/theme.css` on purpose. That file is generated and holds
+ * only token values; this one is hand-written and holds presentation. Keeping them apart
+ * means the generator never has to be taught about CSS rules, and a design tweak here
+ * never risks a spurious `pnpm theme:check` failure.
+ *
+ * Both the web app and Storybook import this, so a component looks the same in review as
+ * it does in the product. Import order matters:
+ *
+ *   @import "tailwindcss";
+ *   @import "@sw/design-tokens/theme.css";
+ *   @import "@sw/ui/base.css";
+ */
+
+@layer base {
+  html {
+    color-scheme: dark;
+    /* Keeps the rem-based type scale anchored to the reader's browser setting. */
+    -webkit-text-size-adjust: 100%;
+
+    /*
+     * The page background lives here rather than on `body`, and that is load-bearing for
+     * the atmosphere layers below. The root element's background paints to the canvas
+     * first, which leaves room for a negative-z child of `body` to sit above it and still
+     * behind content. Move this to `body` and the vignette and fog vanish entirely.
+     */
+    background-color: var(--color-background);
+  }
+
+  body {
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /*
+   * A gold focus ring on everything.
+   *
+   * `:focus-visible` rather than `:focus`, so a mouse click does not leave a ring behind
+   * while keyboard and screen-reader users always get one. Gold because it is the only
+   * accent clearing 5.38:1 against all three surfaces — see SHIPPED_PAIRS in
+   * @sw/design-tokens. A crimson ring would have been the obvious brand choice and would
+   * have been too dark to locate on a dark card.
+   */
+  :focus-visible {
+    outline: var(--border-medium) solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Display type is Cinzel, which is all-capitals inscriptional Roman. It needs the extra
+   * tracking to stop reading as a single carved block, and it is applied by class rather
+   * than to h1–h6, because an admin form's section heading wants the UI face.
+   */
+  .font-display {
+    letter-spacing: var(--tracking-display);
+  }
+
+  /*
+   * Long-form lore. Opt-in rather than inherited: a form label set in Spectral is
+   * atmosphere bought at the cost of legibility, which §6 says loses every time.
+   */
+  .prose {
+    font-family: var(--font-serif);
+    max-width: var(--container-measure);
+  }
+
+  .prose p + p {
+    margin-top: var(--space-4);
+  }
+}
+
+/*
+ * Entrance animations for overlays.
+ *
+ * Hand-written rather than pulled from `tailwindcss-animate`: two keyframes and two
+ * classes is less than the dependency costs, and it keeps the durations reading from the
+ * motion tokens instead of from the plugin's own scale. Exits are not animated — Radix
+ * unmounts on close, and animating that out needs `forceMount` plus presence handling on
+ * every consumer, which is a lot of machinery for 250ms nobody waits through.
+ */
+@layer components {
+  @keyframes sw-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes sw-rise {
+    from {
+      opacity: 0;
+      transform: translateY(var(--space-2)) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .animate-fade-in {
+    animation: sw-fade-in var(--duration-quick) var(--ease-standard);
+  }
+
+  .animate-rise {
+    animation: sw-rise var(--duration-base) var(--ease-standard);
+  }
+}
+
+/*
+ * The atmosphere from PLAN.md §6.
+ *
+ * All three are decoration and none of them is ever interactive, so every one is
+ * `pointer-events: none` and hidden from the accessibility tree by the component that
+ * renders it.
+ *
+ * The contrast rule they all obey — no layer may lighten its surface past `stone` — is
+ * enforced in @sw/design-tokens/src/texture.test.ts, not here. These rules only consume the
+ * values; changing an alpha in this file rather than in the token puts it outside that
+ * check, and the result is a page whose measured palette no longer describes what renders.
+ */
+@layer components {
+  /*
+   * Parchment grain, painted as a background *image* layered over the surface colour.
+   *
+   * Not an `::after` overlay, which is the more obvious construction and the wrong one: a
+   * pseudo-element paints above the card's text as well as its background, so the speckles
+   * would land on the glyphs and lift `bone` off its measured 14.46:1. A background layer
+   * composites only with the other background layers and never touches content.
+   */
+  .grain {
+    background-image: var(--grain-image);
+    background-repeat: repeat;
+  }
+
+  /* Soft darkening at the viewport edges. Behind content — see --z-atmosphere. */
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-atmosphere);
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 110% 90% at 50% 42%,
+      transparent 30%,
+      rgb(0 0 0 / calc(var(--vignette-strength) * 0.45)) 72%,
+      rgb(0 0 0 / var(--vignette-strength)) 100%
+    );
+  }
+
+  /*
+   * The drifting fog, landing page only.
+   *
+   * Two blurred blooms on offset cycles, so the layer never repeats visibly the way a
+   * single drifting shape does. `will-change: transform` keeps the animation on the
+   * compositor — without it the browser repaints an 80px blur every frame, which is
+   * precisely the phone-battery cost §6 asks us to avoid.
+   */
+  .fog {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-atmosphere);
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .fog::before,
+  .fog::after {
+    content: "";
+    position: absolute;
+    inset: -25%;
+    filter: blur(var(--fog-blur));
+    will-change: transform;
+    animation: sw-fog-drift var(--fog-drift-duration) var(--ease-linear) infinite alternate;
+  }
+
+  .fog::before {
+    background: radial-gradient(
+      ellipse 45% 30% at 28% 68%,
+      color-mix(in srgb, var(--fog-color) calc(var(--fog-peak-alpha) * 100%), transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  .fog::after {
+    background: radial-gradient(
+      ellipse 55% 26% at 74% 82%,
+      color-mix(in srgb, var(--fog-color) calc(var(--fog-peak-alpha) * 78%), transparent) 0%,
+      transparent 70%
+    );
+    animation-direction: alternate-reverse;
+    animation-duration: calc(var(--fog-drift-duration) * 1.45);
+  }
+
+  @keyframes sw-fog-drift {
+    from {
+      transform: translate3d(-6%, 2%, 0) scale(1);
+    }
+    to {
+      transform: translate3d(7%, -3%, 0) scale(1.12);
+    }
+  }
+
+  /*
+   * §6: "All of it behind `prefers-reduced-motion`, and the fog layer also disables on
+   * low-power devices so we don't burn a player's phone battery at the table."
+   *
+   * Removed rather than paused. The global reduced-motion rule in theme.css would already
+   * collapse the animation to a single 1ms run, which leaves the fog frozen mid-drift — a
+   * static grey smear that reads as a rendering bug rather than as weather.
+   *
+   * There is no CSS query for "low-power", so these are the honest proxies: `update: slow`
+   * is a display that cannot repaint quickly, and `prefers-reduced-data` is a user who has
+   * asked for less of everything. Neither is a battery reading. A device that reports
+   * neither still gets the fog, which is the failure this can't rule out.
+   */
+  @media (prefers-reduced-motion: reduce), (update: slow), (prefers-reduced-data: reduce) {
+    .fog {
+      display: none;
+    }
+  }
+}

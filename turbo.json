@@ -38,6 +38,13 @@
       "persistent": true,
       "dependsOn": ["^build"]
     },
+
+    // Deliberately NOT named "build". apps/web's build declares `dependsOn: ["^build"]`,
+    // so a package-level "build" script would put a full Storybook compile in front of
+    // every web build and every CI run of it — for an artefact the web app does not use.
+    "build-storybook": {
+      "outputs": ["storybook-static/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []

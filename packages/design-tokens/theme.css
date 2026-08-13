@@ -1,0 +1,180 @@
+/*
+ * GENERATED FILE — do not edit.
+ *
+ * Written by scripts/generate-theme.ts from the TypeScript tokens in this package.
+ * Edit src/*.ts and run `pnpm theme`; `pnpm verify` fails if this file is stale.
+ *
+ * Consumers import it once, after Tailwind:
+ *
+ *   @import "tailwindcss";
+ *   @import "@sw/design-tokens/theme.css";
+ */
+@theme {
+  /* Palette */
+  --color-*: initial;
+
+  --color-void: #0B0A0C;
+  --color-crypt: #141317;
+  --color-stone: #1F1D23;
+  --color-mist: #6E6A75;
+  --color-mist-lit: #948E9C;
+  --color-bone: #E8E3D9;
+  --color-blood: #8B1A1A;
+  --color-ember: #B33636;
+  --color-ember-lit: #E85550;
+  --color-gold: #B08D4F;
+  --color-moss: #4A5D45;
+  --color-arcane: #5B4B8A;
+  --color-danger: #A32222;
+
+  /* Semantic roles — what a colour is FOR. Components should reach for these. */
+  --color-background: #0B0A0C; /* void */
+  --color-surface: #141317; /* crypt */
+  --color-raised: #1F1D23; /* stone */
+  --color-border: #1F1D23; /* stone */
+  --color-rule: #B08D4F; /* gold */
+  --color-text: #E8E3D9; /* bone */
+  --color-text-muted: #948E9C; /* mistLit */
+  --color-text-accent: #E85550; /* emberLit */
+  --color-link: #E85550; /* emberLit */
+  --color-focus: #B08D4F; /* gold */
+  --color-on-fill: #E8E3D9; /* bone */
+  --color-on-gold: #0B0A0C; /* void */
+  --color-fill-accent: #8B1A1A; /* blood */
+  --color-fill-nature: #4A5D45; /* moss */
+  --color-fill-arcane: #5B4B8A; /* arcane */
+  --color-fill-danger: #A32222; /* danger */
+
+  /* Typefaces and weights */
+  --font-*: initial;
+
+  /* Each stack leads with the next/font variable and falls back to the plain family
+     name, so the loaded webfont wins where one is configured and the CSS still names
+     a real typeface where one is not — Storybook, for instance, loads no fonts. */
+  --font-sans: var(--font-inter, Inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-spectral, Spectral), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-display: var(--font-cinzel, Cinzel), Georgia, "Times New Roman", serif;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Type scale */
+  --text-*: initial;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.75rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.875rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.1;
+
+  /* Letter spacing */
+  --tracking-*: initial;
+
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-display: 0.04em;
+  --tracking-wide: 0.12em;
+
+  /* Spacing, radii, breakpoints, measure */
+  --spacing: 0.25rem;
+
+  --radius-*: initial;
+  --radius-none: 0;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-full: 9999px;
+
+  --breakpoint-*: initial;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1280px;
+  --breakpoint-wide: 1536px;
+
+  --container-measure: 72ch;
+
+  /* Motion */
+  --ease-*: initial;
+  --ease-standard: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-linear: linear;
+
+  --duration-instant: 120ms;
+  --duration-quick: 250ms;
+  --duration-base: 320ms;
+  --duration-slow: 400ms;
+
+  /* What a bare `transition` utility uses when nothing overrides it. */
+  --default-transition-duration: var(--duration-quick);
+  --default-transition-timing-function: var(--ease-standard);
+}
+
+:root {
+  /* Atmosphere (PLAN.md §6). Neither the grain nor the fog may lighten its surface
+     past `stone`, which every text colour is already measured against — that ceiling
+     is what sets both alphas, and texture.test.ts enforces it. Retuning these values
+     here rather than in the tokens puts them outside that check. */
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.431 0 0 0 0 0.416 0 0 0 0 0.459 0.2222 0 0 0 -0.1222'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23g)'/%3E%3C/svg%3E");
+  --vignette-strength: 0.55;
+  --fog-color: #6E6A75; /* mist */
+  --fog-peak-alpha: 0.18;
+  --fog-blur: 80px;
+  --fog-drift-duration: 90s;
+
+  /* Stacking order. Tailwind has no theme namespace for z-index, so these are read
+     as `z-[var(--z-modal)]` rather than as generated utilities. */
+  --z-atmosphere: -1;
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-modal: 300;
+  --z-command-palette: 400;
+  --z-toast: 500;
+
+  /* Border widths, for hand-written CSS. Tailwind's border-2 covers the utility case. */
+  --border-none: 0;
+  --border-hairline: 1px;
+  --border-medium: 2px;
+  --border-heavy: 3px;
+
+  /* Named spacing steps, for CSS that cannot use a utility class. */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

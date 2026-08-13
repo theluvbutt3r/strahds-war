@@ -16,3 +16,11 @@ allowBuilds:
 # API's dev server; revisit this list rather than letting it accumulate silently.
 minimumReleaseAgeExclude:
   - tsx@4.23.8
+  - "@storybook/addon-a11y@10.5.8"
+  - "@storybook/addon-docs@10.5.8"
+  - "@storybook/builder-vite@10.5.8"
+  - "@storybook/csf-plugin@10.5.8"
+  - "@storybook/react-dom-shim@10.5.8"
+  - "@storybook/react-vite@10.5.8"
+  - "@storybook/react@10.5.8"
+  - storybook@10.5.8

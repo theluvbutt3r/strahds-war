@@ -37,6 +37,17 @@ Content carries a clearance tier: `public` < `player` < `dm`. New content defaul
 | `pnpm verify:boundaries`         | Prove the security guardrails still fire                     |
 | `pnpm --filter @sw/web test:e2e` | Browser tests (builds first)                                 |
 
+Design system:
+
+| Command                                | Use                                                                    |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm theme`                           | Regenerate `theme.css` after editing a token — **required, see below** |
+| `pnpm theme:check`                     | Fail if the committed CSS is stale (part of `pnpm verify` and CI)      |
+| `pnpm --filter @sw/ui storybook`       | Component review on :6006                                              |
+| `pnpm --filter @sw/ui build-storybook` | Static build, as CI runs it                                            |
+
+`packages/design-tokens/theme.css` is **generated and committed**, the same arrangement as the Drizzle migrations. Tailwind v4 has no JavaScript config — its theme is a CSS `@theme` block — while the tokens are TypeScript, because Storybook and the contrast test read them as data. Editing a colour without running `pnpm theme` leaves the site rendering the old palette while the contrast test happily passes against the new one, so `pnpm theme:check` fails the build instead.
+
 Database work, all of which needs `DATABASE_URL` set:
 
 | Command                            | Use                                                       |
@@ -204,23 +215,27 @@ Real secrets never enter the repo. `.env` is gitignored; gitleaks runs in CI.
 | Why can't I compare roles?           | `docs/adr/0004-capability-based-authorization.md` |
 | Why can't the web app use the DB?    | `docs/adr/0005-db-only-from-api.md`               |
 | How is a half-secret NPC modelled?   | `docs/adr/0006-field-level-visibility.md`         |
+| Why are there two crimsons?          | `docs/adr/0007-text-tier-colours.md`              |
+| Why is the fog behind everything?    | `docs/adr/0008-atmosphere-behind-content.md`      |
 | What was already found and fixed?    | `docs/AUDIT-REMEDIATION.md`                       |
 
 Making a decision that will outlive the conversation? Write an ADR. Format in `docs/adr/README.md`.
 
 ## Current state
 
-**Phase 1 complete.** Data and auth exist; the wiki does not yet.
+**Phases 1 and 2 complete.** Data, auth and the design system exist; the wiki does not yet.
 
 - `packages/schemas` — all nine entity kinds, the graph edges, revisions, the audit log, and the per-field clearance maps (ADR 0006).
 - `packages/authz` — the real matrix, 5 roles × 12 actions, at 100% coverage with thresholds enforced by its own vitest config.
 - `packages/db` — 17 tables, the committed migration in `migrations/`, clearance-aware query builders, and the Barovia seed.
 - `services/api` — Better Auth (Google + Discord, `admin` plugin) at `/api/auth/*`, plus `/me` returning role, clearance and capabilities.
-- `apps/web` — a sign-in page and a home page that shows the signed-in role. No content yet.
+- `packages/design-tokens` — 13 colours, the type scale, spacing, motion, and the contrast test that measures every shipped pair. The palette is split into a text tier and a fill tier because §6's original numbers did not hold (ADR 0007), and `TextColor` makes the distinction a compile error rather than a convention.
+- `packages/ui` — 12 shadcn/ui primitives restyled Barovian, Radix underneath, the interactive ones isolated in `*.client.tsx`. Plus §6's atmosphere: parchment grain on cards, a vignette, and the landing-page fog, all rendered behind content and capped so they cannot lighten a surface past `stone` (ADR 0008). The fog is the one piece of decoration that ships JavaScript — it gates itself on core count, memory, save-data and battery, because §6 requires it to disable on low-power devices and CSS has no way to ask. Storybook covers every component, a token overview, and off/on pairs for each texture.
+- `apps/web` — Tailwind v4 reading the generated `@theme`, the four typefaces self-hosted via `next/font`, and a sign-in page and home page built from the components. No content yet.
 
-**Phase 2 is next:** the design system — `design-tokens`, Tailwind v4 `@theme`, shadcn/ui vendored into `packages/ui`, Storybook, and the CI contrast test. See `docs/PLAN.md` §9.
+**Phase 3 is next:** the read-only wiki — entity pages, list and filter views, `⌘K`, full-text search, and the server-side visibility filtering test that proves no DM field reaches a player's response. See `docs/PLAN.md` §9.
 
-**What is not done, deliberately.** `@sw/api-client` is hand-written rather than generated from the OpenAPI document; generation waits for Phase 3, when there are content endpoints worth generating against. Per-_block_ visibility inside prose waits for the editor in Phase 4 — until then DM prose belongs in each kind's `secrets` field, which is separately gated. There are no entity endpoints yet; the query builders exist and are unit-tested, but nothing routes to them until Phase 3.
+**What is not done, deliberately.** `@sw/api-client` is hand-written rather than generated from the OpenAPI document; generation waits for Phase 3, when there are content endpoints worth generating against. Per-_block_ visibility inside prose waits for the editor in Phase 4 — until then DM prose belongs in each kind's `secrets` field, which is separately gated. There are no entity endpoints yet; the query builders exist and are unit-tested, but nothing routes to them until Phase 3. The design system has no light theme; §6 calls it the afterthought and there is nothing yet to design it against.
 
 **Untested against live infrastructure.** The auth flow has never run against a real Neon database or real OAuth credentials — there are none in this environment. Everything around it is tested (the matrix, the guild-membership decision, session-to-actor mapping, `/me`), and the API boots and serves `/me` correctly, but the first real sign-in is still a first.
 
@@ -232,3 +247,7 @@ Making a decision that will outlive the conversation? Write an ADR. Format in `d
 - **Browsers may need installing once:** `pnpm --filter @sw/web exec playwright install chromium`.
 - **Two Playwright projects** — desktop and mobile. Both run in CI. Players use phones; don't drop mobile.
 - **Workspace packages ship TypeScript source,** not built `dist/`. Next transpiles them, esbuild bundles them for the API. No build-ordering dance in dev.
+- **Tailwind v4 has no `content` array.** Sources are discovered by crawling from the importing CSS file, which stops at the workspace boundary — so `apps/web/src/app/globals.css` and `packages/ui/.storybook/preview.css` each carry an explicit `@source` line pointing at `packages/ui/src`. A new component package needs adding to both, or its classes are stripped as unused and the components render unstyled.
+- **The Storybook script is `build-storybook`, not `build`.** `apps/web`'s build declares `dependsOn: ["^build"]`, so naming it `build` would put a full Storybook compile in front of every web build.
+- **The page background is on `html`, not `body`.** That is what lets the vignette and fog render at `z-index: -1` behind content and still above the page background. Move it to `body` and both layers vanish with no error (ADR 0008).
+- **Half the palette cannot carry text.** `blood`, `ember`, `mist`, `moss`, `arcane` and `danger` are all under 4.5:1 on a dark surface. Reach for the semantic roles (`text-text-muted`, `text-link`, `text-on-fill`) rather than raw hues and it does not come up; reach past them and the contrast test cannot see what you did.

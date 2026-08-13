@@ -1,15 +1,67 @@
 /**
- * @sw/design-tokens — the Barovian palette, type scale and spacing, as plain data.
+ * @sw/design-tokens — the Barovian palette, type scale, spacing and motion, as plain data.
  *
- * Layer 0 and framework-agnostic on purpose: Tailwind's `@theme` block, raw CSS, and a
- * future React Native StyleSheet all read the same values, so the phone app cannot drift
- * from the web app's colours.
+ * Layer 0 and framework-agnostic on purpose: Tailwind's `@theme` block, raw CSS, Storybook
+ * and a future React Native StyleSheet all read the same values, so the phone app cannot
+ * drift from the web app's colours. Nothing here imports anything.
  *
- * Phase 2 fills this in (docs/PLAN.md §9). The palette is already specified in §6, along
- * with the constraint that shapes it: `blood` (#8B1A1A) on `void` (#0B0A0C) is ~3.9:1 and
- * fails WCAG AA, so deep crimson is a fill colour only and `ember` (#B33636, ~5.3:1)
- * carries every piece of crimson text. A CI contrast test lands with the tokens to keep
- * that from regressing quietly.
+ * The one rule worth knowing before using it: **a colour is either a text colour or a fill
+ * colour, and the type system enforces which.** `blood`, `ember`, `moss`, `arcane`, `danger`
+ * and `mist` are all too dark to read words on top of a dark surface — see the note in
+ * `color.ts` for the measurements. Reach for `SEMANTIC` roles rather than raw hues and the
+ * question does not come up.
  */
 
-export const TOKENS_PHASE = 2 as const;
+export {
+  type ColorName,
+  type ColorPair,
+  type FillColor,
+  FILL_COLORS,
+  PALETTE,
+  SEMANTIC,
+  type SemanticRole,
+  SHIPPED_PAIRS,
+  type SurfaceColor,
+  SURFACE_COLORS,
+  type TextColor,
+  TEXT_COLORS,
+} from "./color";
+
+export {
+  AA_BODY_TEXT,
+  AA_LARGE_TEXT,
+  AA_NON_TEXT,
+  blend,
+  contrastRatio,
+  meetsContrast,
+  relativeLuminance,
+} from "./contrast";
+
+export { FOG, GRAIN, VIGNETTE } from "./texture";
+
+export {
+  FONT_CSS_VARIABLES,
+  type FontFamily,
+  FONT_FAMILIES,
+  type FontWeight,
+  FONT_WEIGHTS,
+  LETTER_SPACING,
+  MEASURE,
+  TYPE_SCALE,
+  type TypeStep,
+  type TypeStepName,
+} from "./typography";
+
+export {
+  BORDER_WIDTHS,
+  type Breakpoint,
+  BREAKPOINTS,
+  type Radius,
+  RADII,
+  SPACING,
+  type SpacingStep,
+  Z_INDEX,
+  type ZIndexLayer,
+} from "./space";
+
+export { type Duration, DURATIONS, type Easing, EASINGS, REDUCED_MOTION_DURATION } from "./motion";

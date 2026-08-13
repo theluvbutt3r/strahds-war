@@ -1,37 +1,27 @@
 /*
- * Phase 2 replaces this with Tailwind v4 and the @theme block fed by @sw/design-tokens.
- * These few values exist so Phase 0 has something recognisably Barovian on screen while
- * the toolchain is being verified — they are not the design system.
+ * The web app's stylesheet. Almost all of it is the three imports.
+ *
+ * `theme.css` is generated from @sw/design-tokens by `pnpm theme` and holds the palette,
+ * type scale, spacing and motion. Do not put colour or size values in this file — add them
+ * to packages/design-tokens/src and regenerate, or the contrast test in CI ends up
+ * checking a palette the site no longer uses.
+ *
+ * `base.css` comes from @sw/ui and holds the element defaults — body colours, the gold
+ * focus ring, the prose measure. Storybook imports the same two files, which is what makes
+ * a component look the same in review as it does here.
  */
 
-:root {
-  --void: #0b0a0c;
-  --crypt: #141317;
-  --mist: #6e6a75;
-  --bone: #e8e3d9;
-  --ember: #b33636;
-  --gold: #b08d4f;
-}
+@import "tailwindcss";
+@import "@sw/design-tokens/theme.css";
+@import "@sw/ui/base.css";
 
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--void);
-  color: var(--bone);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-a {
-  color: var(--ember);
-}
+/*
+ * Tell Tailwind where to find class names.
+ *
+ * v4 discovers sources by crawling from the importing file, which covers apps/web but
+ * stops at the workspace boundary — so every utility used inside @sw/ui would be treated
+ * as unused and dropped, and the components would render unstyled. This is the v4
+ * replacement for v3's `content` array, and it is the thing most likely to be forgotten
+ * when a new component package appears: add it here too.
+ */
+@source "../../../../packages/ui/src";

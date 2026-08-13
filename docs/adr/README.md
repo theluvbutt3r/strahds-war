@@ -14,6 +14,8 @@ Several of them are referenced directly from code and from tooling, including in
 | [0004](0004-capability-based-authorization.md) | `tooling/eslint-config/restricted-syntax.js` — **quoted in the lint error itself**                 |
 | [0005](0005-db-only-from-api.md)               | `packages/db/src/index.ts`, `.dependency-cruiser.cjs`, `tooling/eslint-config/boundaries.js`       |
 | [0006](0006-field-level-visibility.md)         | `packages/schemas/src/entities.ts`, `packages/db/src/queries.ts`                                   |
+| [0007](0007-text-tier-colours.md)              | `packages/design-tokens/src/color.ts`, `docs/PLAN.md` §6                                           |
+| [0008](0008-atmosphere-behind-content.md)      | `packages/design-tokens/src/texture.ts`, `packages/ui/src/atmosphere.tsx`, `fog.client.tsx`        |
 
 If you rename or remove one of these files, fix the referring comment in the same commit. A rule that tells you to go read a document that does not exist is worse than a rule with no explanation, because it costs the reader the time it takes to find that out.
 

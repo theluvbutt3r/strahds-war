@@ -82,7 +82,27 @@ module.exports = {
         // exactly what they should be using.
         pathNot: "\\.(test|spec)\\.(ts|tsx)$|\\.config\\.(ts|js|mjs|cjs)$|/build\\.ts$",
       },
-      to: { dependencyTypes: ["npm-dev"], dependencyTypesNot: ["type-only"] },
+      // `npm-peer` is excluded because a peer dependency is not a dev-only dependency: the
+      // consuming app supplies it at runtime, which is the entire contract. packages/ui lists
+      // react in BOTH peerDependencies (what apps/web must provide) and devDependencies (so
+      // the package can typecheck and run Storybook on its own) — the standard shape for a
+      // component library, and dependency-cruiser reports both types for it. Without this,
+      // the first component to import a React *value* rather than a type trips the rule.
+      //
+      // The protection is intact, and that was checked rather than assumed: react reports
+      // dependencyTypes ["npm-dev","npm-peer","import"] and is now allowed, while a runtime
+      // import of @playwright/test from apps/web reports ["npm-dev","import"] and is still
+      // rejected. Only a declared peer gets through.
+      //
+      // Worth knowing while you are in here: this rule can only judge imports the resolver
+      // below actually resolves, and it silently drops the ones it cannot. `vite`,
+      // `vitest` and `@vitejs/plugin-react` never appear in the graph at all, so a runtime
+      // import of any of them from shipping source would pass unnoticed. That is a
+      // pre-existing gap in `enhancedResolveOptions`, not a consequence of this exemption.
+      to: {
+        dependencyTypes: ["npm-dev"],
+        dependencyTypesNot: ["type-only", "npm-peer"],
+      },
     },
     {
       name: "no-deprecated-core",
@@ -100,8 +120,12 @@ module.exports = {
     // into a check that always passes. (An earlier version of this config excluded a
     // `scripts/__boundary-fixtures__/` path that has never existed; it was harmless but
     // read as though fixtures were being skipped, which is the opposite of the design.)
+    // Build output only. Every exclusion here is a directory a bundler wrote — the source
+    // that produced it is still cruised, so no rule is weakened by any of them.
+    // `storybook-static/` joins the list for the same reason `dist/` is on it: bundled
+    // vendor code is full of legitimate cycles that say nothing about our layering.
     exclude: {
-      path: "(\\.test\\.(ts|tsx)$|\\.spec\\.(ts|tsx)$|/e2e/|/dist/|/\\.next/|/coverage/)",
+      path: "(\\.test\\.(ts|tsx)$|\\.spec\\.(ts|tsx)$|/e2e/|/dist/|/\\.next/|/coverage/|/storybook-static/)",
     },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: "tsconfig.json" },
