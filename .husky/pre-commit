@@ -17,5 +17,6 @@ if command -v gitleaks >/dev/null 2>&1; then
   gitleaks protect --staged --redact --no-banner --config .gitleaks.toml
 else
   echo "note: gitleaks not installed — skipping local secret scan (CI still runs it)"
-  echo "      brew install gitleaks"
+  echo "      winget install Gitleaks.Gitleaks   # Windows"
+  echo "      brew install gitleaks              # macOS"
 fi
