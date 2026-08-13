@@ -15,7 +15,9 @@
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "typecheck": "turbo run typecheck",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm lint:deps && pnpm verify:boundaries",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm theme:check && pnpm test && pnpm lint:deps && pnpm verify:boundaries",
+    "theme": "tsx scripts/generate-theme.ts",
+    "theme:check": "tsx scripts/generate-theme.ts --check",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "lint:deps": "depcruise apps services packages tooling",
@@ -27,6 +29,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@sw/design-tokens": "workspace:*",
     "@sw/eslint-config": "workspace:*",
     "@sw/tsconfig": "workspace:*",
     "dependency-cruiser": "18.1.1",

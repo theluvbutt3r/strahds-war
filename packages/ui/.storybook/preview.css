@@ -1,0 +1,15 @@
+/*
+ * The same three imports apps/web uses, in the same order. If this file and
+ * apps/web/src/app/globals.css ever disagree, Storybook stops being evidence.
+ */
+
+@import "tailwindcss";
+@import "@sw/design-tokens/theme.css";
+@import "@sw/ui/base.css";
+
+/*
+ * Tailwind scans from the importing file's directory, which is `.storybook/` — so the
+ * component source one level up has to be named explicitly or every utility class in it is
+ * treated as unused and stripped.
+ */
+@source "../src";

@@ -49,6 +49,15 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # packages/design-tokens/theme.css is generated from the TypeScript tokens and
+      # committed. If someone edits a colour and forgets `pnpm theme`, the contrast test
+      # below still passes — it reads the TypeScript — while the site renders the old
+      # palette. This is the step that catches that gap.
+      - name: Theme is up to date
+        run: pnpm theme:check
+
+      # Includes the contrast test: every colour pair the design system ships, measured
+      # against its WCAG threshold (PLAN.md §6, ADR 0007).
       - name: Unit tests
         run: pnpm test
 
@@ -85,6 +94,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+
+      # Storybook is not part of `pnpm build` — it is named `build-storybook` precisely so
+      # it stays off apps/web's dependency chain. Building it here anyway is what catches a
+      # story that imports something that no longer exists, which typecheck sees but the
+      # web build never touches.
+      - name: Build Storybook
+        run: pnpm --filter @sw/ui build-storybook
 
   e2e:
     name: End-to-end

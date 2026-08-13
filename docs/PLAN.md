@@ -216,23 +216,29 @@ The aesthetic goal: **an artifact recovered from the Amber Temple**, not a fanta
 
 Dark-mode-first. Not a dark variant of a light theme — the light theme, if we build one, is the afterthought.
 
-| Token    | Hex       | Use                                               |
-| -------- | --------- | ------------------------------------------------- |
-| `void`   | `#0B0A0C` | Page background — near-black, warm-shifted        |
-| `crypt`  | `#141317` | Cards, surfaces                                   |
-| `stone`  | `#1F1D23` | Raised surfaces, inputs, hover states             |
-| `mist`   | `#6E6A75` | Muted text, metadata, disabled                    |
-| `bone`   | `#E8E3D9` | Primary text — warm off-white, not pure white     |
-| `blood`  | `#8B1A1A` | Deep crimson — **fills and borders only**         |
-| `ember`  | `#B33636` | Brighter crimson — **all crimson text and links** |
-| `gold`   | `#B08D4F` | Tarnished gold — rules, dividers, accents         |
-| `moss`   | `#4A5D45` | Svalich woods green — secondary, nature, druidic  |
-| `arcane` | `#5B4B8A` | Muted violet — magic, arcana, the Vistani         |
-| `danger` | `#A32222` | Destructive actions                               |
+| Token      | Hex       | Use                                                 |
+| ---------- | --------- | --------------------------------------------------- |
+| `void`     | `#0B0A0C` | Page background — near-black, warm-shifted          |
+| `crypt`    | `#141317` | Cards, surfaces                                     |
+| `stone`    | `#1F1D23` | Raised surfaces, inputs, hover states               |
+| `mist`     | `#6E6A75` | Muted grey — **fills and borders only**             |
+| `mistLit`  | `#948E9C` | Muted **text**, metadata, disabled                  |
+| `bone`     | `#E8E3D9` | Primary text — warm off-white, not pure white       |
+| `blood`    | `#8B1A1A` | Deep crimson — **fills and borders only**           |
+| `ember`    | `#B33636` | Brighter crimson — **fills and large display type** |
+| `emberLit` | `#E85550` | Crimson **text** and links                          |
+| `gold`     | `#B08D4F` | Tarnished gold — rules, dividers, accents           |
+| `moss`     | `#4A5D45` | Svalich woods green — secondary, nature, druidic    |
+| `arcane`   | `#5B4B8A` | Muted violet — magic, arcana, the Vistani           |
+| `danger`   | `#A32222` | Destructive actions                                 |
 
-**An accessibility note that determines a real constraint:** `blood` (#8B1A1A) on `void` (#0B0A0C) is roughly 3.9:1 — it fails WCAG AA for body text. So deep crimson is a _fill_ color, never a text color. `ember` (#B33636) reaches about 5.3:1 and passes, so it carries every piece of crimson text and every link. This is worth stating explicitly because "make the accent color the brand red" is the natural instinct and it would quietly make the site hard to read for anyone with reduced contrast sensitivity — including you, at 1am, mid-session.
+**An accessibility note that determines a real constraint:** a colour is either a _fill_ colour or a _text_ colour, and the two sets barely overlap. `blood` (#8B1A1A) on `void` (#0B0A0C) measures 2.13:1 and `ember` (#B33636) measures 3.29:1 — both well under the 4.5:1 WCAG AA needs for body text. So the deep crimsons fill shapes, and `emberLit` (#E85550, 4.65:1 at worst) carries every piece of crimson text and every link. The same split applies to the muted grey: `mist` fills, `mistLit` is the one you set metadata in.
 
-A contrast test runs in CI against every token pair we actually ship, so this can't regress silently.
+This is worth stating explicitly because "make the accent color the brand red" is the natural instinct and it would quietly make the site hard to read for anyone with reduced contrast sensitivity — including you, at 1am, mid-session.
+
+> **Corrected in Phase 2.** This section originally put `blood` at ~3.9:1 and `ember` at ~5.3:1, and concluded that `ember` passed AA and could carry crimson text. Both figures were wrong; `ember` misses the bar. The contrast test below is what caught it, before any component consumed a token. The full measurements, the two colours added in response, and the alternatives rejected are in [ADR 0007](adr/0007-text-tier-colours.md).
+
+A contrast test runs in CI against every token pair we actually ship, so this can't regress silently. `TEXT_COLORS` in `packages/design-tokens` also makes it a _compile_ error to set text in a fill colour, so the rule holds without anyone having to remember it.
 
 ### Typography
 
@@ -248,6 +254,8 @@ Self-hosted via `next/font` — no external font requests, no layout shift, no G
 Subtle: a fine parchment grain on card surfaces, a soft vignette at viewport edges, hairline gold rules between sections, a slow drifting fog layer on the landing page only. Transitions are slow and eased — 250–400ms, a crypt door rather than a modern app's snap.
 
 All of it behind `prefers-reduced-motion`, and the fog layer also disables on low-power devices so we don't burn a player's phone battery at the table.
+
+> **Built in Phase 2.** The two page-level layers render _behind_ content rather than over it, and neither may lighten its surface past `stone` — so the contrast guarantees in [ADR 0007](adr/0007-text-tier-colours.md) still describe what actually renders. "Low-power" needs JavaScript, since CSS has no battery query: the fog reads core count, device memory, save-data and battery level, and suppresses itself when any of them says the device is constrained. [ADR 0008](adr/0008-atmosphere-behind-content.md) has the reasoning and the costs.
 
 ---
 

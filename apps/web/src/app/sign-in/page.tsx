@@ -1,3 +1,5 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, OrnamentRule } from "@sw/ui";
+
 import { SignInButtons } from "../components/client/auth-buttons.client";
 
 /**
@@ -20,31 +22,31 @@ export const metadata = {
 
 export default function SignInPage() {
   return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        display: "grid",
-        placeContent: "center",
-        justifyItems: "center",
-        gap: "1.75rem",
-        padding: "2rem",
-        textAlign: "center",
-      }}
-    >
-      <h1 style={{ margin: 0, fontSize: "clamp(1.75rem, 5vw, 2.75rem)", letterSpacing: "0.08em" }}>
-        STRAHD&rsquo;S WAR
-      </h1>
+    <main className="grid min-h-dvh place-content-center justify-items-center gap-8 p-8">
+      <header className="grid justify-items-center gap-4 text-center">
+        <h1 className="font-display tracking-display text-3xl font-bold desktop:text-4xl">
+          STRAHD&rsquo;S WAR
+        </h1>
+        <OrnamentRule className="w-40" />
+      </header>
 
-      <p style={{ color: "var(--mist)", margin: 0, maxWidth: "38ch", lineHeight: 1.6 }}>
-        The valley keeps its own counsel. Sign in to be let through the mists.
-      </p>
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle as="h2" className="text-lg">
+            The valley keeps its own counsel
+          </CardTitle>
+          <CardDescription>Sign in to be let through the mists.</CardDescription>
+        </CardHeader>
 
-      <SignInButtons discordEnabled={discordEnabled} googleEnabled={googleEnabled} />
+        <CardContent className="grid gap-4">
+          <SignInButtons discordEnabled={discordEnabled} googleEnabled={googleEnabled} />
 
-      <p style={{ color: "var(--mist)", margin: 0, maxWidth: "40ch", fontSize: "0.8125rem" }}>
-        Signing in with Discord grants the Player role automatically if you are in the campaign
-        server. Everything else is granted by hand.
-      </p>
+          <p className="text-text-muted text-center text-xs leading-relaxed">
+            Signing in with Discord grants the Player role automatically if you are in the campaign
+            server. Everything else is granted by hand.
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@sw/ui";
 import { useState } from "react";
 
 import { signIn, signOut } from "../../../lib/auth-client";
@@ -16,18 +17,6 @@ import { signIn, signOut } from "../../../lib/auth-client";
  * Nothing here reads campaign content. It starts an OAuth redirect and nothing more,
  * which is exactly the amount of work that belongs on the client.
  */
-
-const buttonStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  padding: "0.85rem 1.25rem",
-  border: "1px solid var(--gold, #b08d4f)",
-  background: "transparent",
-  color: "var(--bone, #e8e3d9)",
-  font: "inherit",
-  letterSpacing: "0.06em",
-  cursor: "pointer",
-};
 
 export function SignInButtons({
   discordEnabled,
@@ -55,42 +44,47 @@ export function SignInButtons({
   };
 
   return (
-    <div style={{ display: "grid", gap: "0.75rem", width: "min(22rem, 100%)" }}>
+    <div className="grid gap-3">
       {discordEnabled ? (
-        <button
+        <Button
           type="button"
-          style={buttonStyle}
+          variant="secondary"
+          size="lg"
           onClick={() => {
             start("discord");
           }}
           disabled={pending !== null}
         >
           {pending === "discord" ? "Opening Discord…" : "Sign in with Discord"}
-        </button>
+        </Button>
       ) : null}
 
       {googleEnabled ? (
-        <button
+        <Button
           type="button"
-          style={buttonStyle}
+          variant="secondary"
+          size="lg"
           onClick={() => {
             start("google");
           }}
           disabled={pending !== null}
         >
           {pending === "google" ? "Opening Google…" : "Sign in with Google"}
-        </button>
+        </Button>
       ) : null}
 
       {!discordEnabled && !googleEnabled ? (
-        <p style={{ color: "var(--mist, #6e6a75)", margin: 0, fontSize: "0.875rem" }}>
+        <p className="text-text-muted text-sm">
           No sign-in provider is configured. Set the Discord or Google credentials in the
-          API&rsquo;s environment — see <code>.env.example</code>.
+          API&rsquo;s environment — see <code className="font-mono text-xs">.env.example</code>.
         </p>
       ) : null}
 
       {error ? (
-        <p role="alert" style={{ color: "var(--ember, #b33636)", margin: 0, fontSize: "0.875rem" }}>
+        // `role="alert"` so a screen reader announces the failure without the user having
+        // to go looking for it. The visual crimson is `text-accent` (emberLit), which is
+        // the readable crimson — `ember` at this size would be 3.3:1.
+        <p role="alert" className="text-text-accent text-sm">
           {error}
         </p>
       ) : null}
@@ -102,9 +96,10 @@ export function SignOutButton() {
   const [pending, setPending] = useState(false);
 
   return (
-    <button
+    <Button
       type="button"
-      style={{ ...buttonStyle, width: "auto", padding: "0.5rem 1rem", fontSize: "0.875rem" }}
+      variant="ghost"
+      size="sm"
       disabled={pending}
       onClick={() => {
         setPending(true);
@@ -114,6 +109,6 @@ export function SignOutButton() {
       }}
     >
       {pending ? "Signing out…" : "Sign out"}
-    </button>
+    </Button>
   );
 }

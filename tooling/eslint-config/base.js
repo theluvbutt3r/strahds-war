@@ -28,6 +28,9 @@ export const base = tseslint.config(
       "**/dist/**",
       "**/.next/**",
       "**/.turbo/**",
+      // Storybook's static build. Same category as dist/ and .next/ — generated, minified,
+      // never read by a human, and it lints as ~25,000 findings in bundled vendor code.
+      "**/storybook-static/**",
       "**/coverage/**",
       "**/playwright-report/**",
       "**/test-results/**",
